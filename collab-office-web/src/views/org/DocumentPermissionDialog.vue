@@ -1,0 +1,12 @@
+<template><el-dialog v-model="open" title="文档成员权限" width="580px" class="document-permission-dialog"><div class="office-toolbar"><el-select v-model="selected" filterable placeholder="选择团队成员"><el-option v-for="m in members.filter(m=>String(m.userId)!==creator)" :key="m.userId" :label="m.name" :value="String(m.userId)"/></el-select><el-button :disabled="!selected" @click="add">添加</el-button></div><div v-for="(g,i) in grants" :key="g.userId" class="permission-row"><span>{{members.find(m=>String(m.userId)===String(g.userId))?.name||g.userId}}</span><el-select v-model="g.permission"><el-option v-for="p in levels" :key="p.value" :label="p.label" :value="p.value"/></el-select><el-button circle title="恢复继承权限" @click="grants.splice(i,1)"><span class="material-symbols-outlined">close</span></el-button></div><el-empty v-if="!grants.length" description="使用文件夹或团队权限" :image-size="60"/><template #footer><el-button @click="open=false">取消</el-button><el-button type="primary" @click="save">保存成员权限</el-button></template></el-dialog></template>
+<script setup lang="ts">
+import {ref,watch} from 'vue'
+import request from '@/utils/request'
+import {ElMessage} from 'element-plus'
+import {useWorkspaceStore} from '@/stores/workspace'
+const open=defineModel<boolean>({default:false}),props=defineProps<{docId:string}>(),workspace=useWorkspaceStore(),creator=ref(''),members=ref<any[]>([]),grants=ref<any[]>([]),selected=ref(''),levels=[{value:1,label:'仅查看'},{value:2,label:'可编辑'},{value:3,label:'可管理'},{value:4,label:'仅评论'}],base=()=>`/space/${workspace.spaceId}/organization`
+watch(open,async show=>{if(!show)return;try{const r:any[]=await Promise.all([request.get(base()),request.get(base()+'/documents/'+props.docId)]);members.value=r[0].data.members;creator.value=String(r[1].data.creatorId);grants.value=r[1].data.grants.filter((g:any)=>String(g.userId)!==creator.value)}catch{open.value=false}})
+function add(){if(!grants.value.some(g=>String(g.userId)===selected.value))grants.value.push({userId:selected.value,permission:1});selected.value=''}
+async function save(){try{await request.put(base()+'/documents/'+props.docId,grants.value);open.value=false;ElMessage.success('文档权限已保存')}catch{}}
+</script>
+<style scoped>.permission-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-border)}.permission-row>span{flex:1;min-width:0;overflow-wrap:anywhere}.permission-row .el-select{width:110px}:global(.document-permission-dialog.el-dialog){max-width:calc(100vw - 24px);max-height:85dvh;overflow:auto}</style>

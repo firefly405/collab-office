@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.collaboffice.doc.mapper.DocDocumentMapper">
+
+    <resultMap id="DetailResultMap" type="com.collaboffice.doc.vo.DocumentDetailVO">
+        <result column="doc_id" property="docId"/>
+        <result column="title" property="title"/>
+        <result column="type" property="type"/>
+        <result column="creator_name" property="creatorName"/>
+        <result column="last_editor_name" property="lastEditorName"/>
+        <result column="current_version" property="currentVersion"/>
+        <result column="word_count" property="wordCount"/>
+        <result column="edit_count" property="editCount"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="tags" property="tags"/>
+        <result column="is_favorite" property="isFavorite"/>
+        <result column="is_pinned" property="isPinned"/>
+        <result column="folder_id" property="folderId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="last_edit_time" property="lastEditTime"/>
+        <result column="member_count" property="memberCount"/>
+        <result column="online_member_count" property="onlineMemberCount"/>
+    </resultMap>
+
+    <select id="selectListWithFilters" resultMap="DetailResultMap">
+        SELECT d.doc_id, d.title, d.type, d.creator_name,
+               d.last_editor_name, d.current_version, d.word_count,
+               d.edit_count, d.view_count, d.tags, IF(f.user_id IS NULL, 0, 1) AS is_favorite,
+               d.create_time, d.last_edit_time, d.folder_id, IF(p.user_id IS NULL,0,1) AS is_pinned,
+               (SELECT COUNT(*) FROM doc_member m WHERE m.doc_id = d.doc_id) as member_count,
+               (SELECT COUNT(*) FROM doc_member m WHERE m.doc_id = d.doc_id AND m.is_online = 1) as online_member_count
+        FROM doc_document d
+        LEFT JOIN doc_user_favorite f ON f.doc_id=d.doc_id AND f.user_id=#{request.userId}
+        LEFT JOIN doc_user_pin p ON BINARY p.doc_id=BINARY d.doc_id AND p.user_id=#{request.userId}
+        WHERE d.deleted = 0 AND d.status = #{request.status}
+        <if test="request.status == 0">AND d.creator_id=#{request.userId}</if>
+        <if test="request.filter == 'mine'">AND d.creator_id=#{request.userId}</if>
+        <if test="request.filter == 'shared'">AND d.creator_id != #{request.userId}</if>
+        <if test="request.filter == 'starred'">AND f.user_id IS NOT NULL</if>
+        <if test="request.spaceId != null">
+            AND d.space_id = #{request.spaceId}
+        </if>
+        <if test="request.type != null">
+            AND d.type = #{request.type}
+        </if>
+        <if test="request.folderId != null">
+            AND d.folder_id = #{request.folderId}
+        </if>
+        <if test="request.keyword != null and request.keyword != ''">
+            AND d.title LIKE CONCAT('%', #{request.keyword}, '%')
+        </if>
+        <if test="request.tag != null and request.tag != ''">
+            AND d.tags LIKE CONCAT('%', #{request.tag}, '%')
+        </if>
+        ORDER BY is_pinned DESC, d.last_edit_time DESC, d.create_time DESC
+    </select>
+
+    <select id="selectBySpaceId" resultType="com.collaboffice.doc.entity.DocDocument">
+        SELECT * FROM doc_document WHERE space_id = #{spaceId} AND deleted = 0 AND status = 1
+        ORDER BY last_edit_time DESC
+    </select>
+
+    <select id="countUserDocs" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM doc_document WHERE creator_id = #{userId} AND deleted = 0
+    </select>
+</mapper>

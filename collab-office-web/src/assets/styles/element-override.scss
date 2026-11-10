@@ -1,0 +1,158 @@
+// ==========================================
+// Element Plus Kinetic Sync 主题覆盖
+// ==========================================
+@use './variables' as *;
+@use 'sass:color';
+
+:root {
+  --el-color-primary: #{$color-brand};
+  --el-color-primary-light-3: #{color.mix($color-brand, white, 70%)};
+  --el-color-primary-light-5: #{color.mix($color-brand, white, 50%)};
+  --el-color-primary-light-7: #{color.mix($color-brand, white, 30%)};
+  --el-color-primary-light-8: #{color.mix($color-brand, white, 20%)};
+  --el-color-primary-light-9: #{color.mix($color-brand, white, 10%)};
+  --el-color-primary-dark-2: #{$color-brand-hover};
+  --el-color-success: #{$color-success};
+  --el-color-warning: #{$color-warning};
+  --el-color-danger: #{$color-danger};
+  --el-border-color: #{$color-border};
+  --el-border-radius-base: #{$radius};
+  --el-font-size-base: #{$body-md-size};
+}
+
+// -- 主按钮 --
+.el-button--primary {
+  --el-button-bg-color: #{$color-brand};
+  --el-button-border-color: #{$color-brand};
+  --el-button-hover-bg-color: #{$color-brand-hover};
+  --el-button-hover-border-color: #{$color-brand-hover};
+  --el-button-active-bg-color: #{$color-brand-active};
+  --el-button-active-border-color: #{$color-brand-active};
+}
+
+// -- 菜单导航 --
+.el-menu {
+  background: var(--c-surface);
+}
+.el-menu-item.is-active {
+  background: var(--c-brand-light) !important;
+  border-left: 3px solid #{$color-brand} !important;
+  color: #{$color-brand} !important;
+}
+
+// -- 输入框 --
+.el-input__wrapper {
+  border-radius: $radius;
+}
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--c-brand-light) inset !important;
+}
+
+// -- 表格 --
+.el-table {
+  th.el-table__cell {
+    background: #{$color-bg};
+    color: #{$color-text-secondary};
+    font-weight: 600;
+    font-size: #{$label-md-size};
+  }
+}
+
+// -- 标签 --
+.el-tag {
+  border-radius: $radius !important;
+  font-weight: 600;
+}
+
+// -- 卡片 --
+.el-card {
+  border: 1px solid #{$color-border};
+  border-radius: $radius-lg !important;
+  box-shadow: none;
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
+}
+
+// -- 对话框 --
+.el-dialog {
+  border-radius: $radius-xl !important;
+}
+
+// -- 抽屉 --
+.el-drawer {
+  border-radius: $radius-lg 0 0 $radius-lg !important;
+}
+
+// -- 消息提示 --
+.el-message {
+  border-radius: $radius-lg;
+}
+
+// -- 下拉菜单 --
+.el-dropdown-menu {
+  border-radius: $radius-lg;
+  box-shadow: $shadow-float;
+}
+
+// -- 弹出框 --
+.el-popover {
+  border-radius: $radius-lg;
+  box-shadow: $shadow-float;
+}
+
+// -- 分页 --
+.el-pagination .el-pager li.is-active {
+  background: #{$color-brand};
+}
+
+// -- 开关 --
+.el-switch.is-checked .el-switch__core {
+  background: #{$color-brand};
+  border-color: #{$color-brand};
+}
+
+// -- 复选框 / 单选 --
+.el-checkbox__input.is-checked .el-checkbox__inner,
+.el-radio__input.is-checked .el-radio__inner {
+  background: #{$color-brand};
+  border-color: #{$color-brand};
+}
+
+// -- 滑块 --
+.el-slider__bar {
+  background: #{$color-brand};
+}
+.el-slider__button {
+  border-color: #{$color-brand};
+}
+
+// -- 进度条 --
+.el-progress-bar__inner {
+  background: #{$color-brand};
+}
+
+// -- 标签页 --
+.el-tabs__active-bar {
+  background: #{$color-brand};
+}
+.el-tabs__item.is-active {
+  color: #{$color-brand};
+}
+
+// -- 加载 --
+.el-loading-spinner .circular circle {
+  stroke: #{$color-brand};
+}
+
+// -- 步骤条 --
+.el-step__head.is-finish .el-step__icon,
+.el-step__head.is-finish .el-step__line-inner {
+  background: #{$color-brand};
+  border-color: #{$color-brand};
+}
+
+// -- 通用过渡 --
+.el-button { transition: all .15s $ease-out; }
+.el-button:active { transform: scale(.97); }

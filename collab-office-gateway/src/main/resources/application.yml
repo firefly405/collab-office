@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+app:
+  internal-token: ${INTERNAL_CALL_TOKEN}
+
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: collab-office-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/user/**,/api/v1/space/**,/api/v1/admin/**,/api/v1/org/**
+        - id: document-service
+          uri: lb://document-service
+          predicates:
+            - Path=/api/v1/document/**,/api/v1/sheet/**,/api/v1/mindmap/**,/api/v1/whiteboard/**,/api/v1/template/**
+        - id: message-service
+          uri: lb://message-service
+          predicates:
+            - Path=/api/v1/chat/**,/api/v1/im/**
+        - id: meeting-service
+          uri: lb://meeting-service
+          predicates:
+            - Path=/api/v1/meeting/**
+        - id: task-service
+          uri: lb://task-service
+          predicates:
+            - Path=/api/v1/task/**,/api/v1/kanban/**
+        - id: file-service
+          uri: lb://file-service
+          predicates:
+            - Path=/api/v1/file/**,/api/v1/knowledge/**,/api/v1/doc/**
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=/api/v1/search/**
+        - id: collaboration-service
+          uri: lb://collaboration-service
+          predicates:
+            - Path=/api/v1/collaboration/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notification/**
+
+logging:
+  level:
+    com.collaboffice: ${LOG_LEVEL:INFO}
+    com.alibaba.nacos: WARN

@@ -1,0 +1,476 @@
+name: collab-office
+
+x-java-build: &java-build
+  context: .
+  dockerfile: Dockerfile
+
+x-java-environment: &java-environment
+  TZ: Asia/Shanghai
+  JWT_SECRET: ${JWT_SECRET:-collab-office-dev-jwt-secret-change-me-32chars}
+  INTERNAL_CALL_TOKEN: ${INTERNAL_CALL_TOKEN:-collab-office-internal-dev-token}
+  DB_URL: jdbc:mysql://mysql:3306/collab_office?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+  DB_USERNAME: root
+  DB_PASSWORD: ${DB_PASSWORD:-collab_dev_password}
+  SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/collab_office?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+  SPRING_DATASOURCE_USERNAME: root
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-collab_dev_password}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: ""
+  SPRING_DATA_REDIS_HOST: redis
+  SPRING_DATA_REDIS_PORT: 6379
+  SPRING_DATA_REDIS_PASSWORD: ""
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_RABBITMQ_PORT: 5672
+  SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+  SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+  NACOS_ADDR: nacos:8848
+  SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+  ELASTICSEARCH_URIS: http://elasticsearch:9200
+  MINIO_ENDPOINT: http://minio:9000
+  MINIO_PUBLIC_ENDPOINT: ${DOCKER_MINIO_PUBLIC_ENDPOINT:-http://localhost:19000}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+  MINIO_BUCKET: ${MINIO_BUCKET:-doc-files}
+  SMTP_HOST: mailpit
+  SMTP_PORT: 1025
+  SMTP_USER: collab
+  SMTP_PASS: collab
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xms128m -Xmx384m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom}
+
+x-java-service: &java-service
+  restart: unless-stopped
+  networks: [collab-net]
+  environment:
+    <<: *java-environment
+  mem_limit: 512m
+  security_opt: [no-new-privileges:true]
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: collab-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=300
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-collab_dev_password}
+      MYSQL_DATABASE: collab_office
+    ports: ["127.0.0.1:${MYSQL_PORT:-13306}:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks: [collab-net]
+
+  db-migrate:
+    image: flyway/flyway:10.20.1-alpine
+    container_name: collab-db-migrate
+    restart: "no"
+    environment:
+      FLYWAY_URL: jdbc:mysql://mysql:3306/collab_office?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      FLYWAY_USER: root
+      FLYWAY_PASSWORD: ${DB_PASSWORD:-collab_dev_password}
+      FLYWAY_CONNECT_RETRIES: 60
+      FLYWAY_VALIDATE_MIGRATION_NAMING: "true"
+      FLYWAY_CLEAN_DISABLED: "true"
+    command: migrate
+    volumes:
+      - ./collab-office-common/src/main/resources/db/migration:/flyway/sql:ro
+    depends_on:
+      mysql: { condition: service_healthy }
+    networks: [collab-net]
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: collab-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    ports: ["127.0.0.1:${REDIS_PORT:-16380}:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [collab-net]
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: collab-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      # 容器内其他服务不是 RabbitMQ 的 localhost；仅宿主机回环端口可访问此实例。
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit loopback_users []"
+    ports:
+      - "127.0.0.1:${RABBITMQ_AMQP_PORT:-15674}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [collab-net]
+
+  minio:
+    image: minio/minio:latest
+    container_name: collab-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-19000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes: [minio-data:/data]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [collab-net]
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: collab-minio-init
+    restart: "no"
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-doc-files}
+    entrypoint: >-
+      /bin/sh -c '
+      until mc alias set local http://minio:9000 "$$MINIO_ACCESS_KEY" "$$MINIO_SECRET_KEY"; do sleep 2; done;
+      mc mb --ignore-existing "local/$$MINIO_BUCKET";
+      mc anonymous set download "local/$$MINIO_BUCKET";
+      '
+    depends_on:
+      minio: { condition: service_healthy }
+    networks: [collab-net]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.27
+    container_name: collab-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms384m -Xmx384m
+    ports: ["127.0.0.1:${ELASTICSEARCH_PORT:-19200}:9200"]
+    volumes: [es-data:/usr/share/elasticsearch/data]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [collab-net]
+
+  elasticsearch-init:
+    image: curlimages/curl:8.10.1
+    container_name: collab-elasticsearch-init
+    restart: "no"
+    entrypoint: >-
+      /bin/sh -c '
+      curl -fsS -o /dev/null -I http://elasticsearch:9200/document_index || curl -fsS -X PUT http://elasticsearch:9200/document_index;
+      curl -fsS -o /dev/null -I http://elasticsearch:9200/task_index || curl -fsS -X PUT http://elasticsearch:9200/task_index;
+      '
+    depends_on:
+      elasticsearch: { condition: service_healthy }
+    networks: [collab-net]
+
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: collab-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      PREFER_HOST_MODE: hostname
+      JVM_XMS: 256m
+      JVM_XMX: 512m
+      JVM_XMN: 128m
+    ports: ["127.0.0.1:${NACOS_PORT:-18848}:8848"]
+    volumes: [nacos-logs:/home/nacos/logs]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8848/nacos/v1/console/health/readiness >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks: [collab-net]
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    container_name: collab-mailpit
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports: ["127.0.0.1:${MAILPIT_PORT:-18025}:8025"]
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [collab-net]
+
+  user-service:
+    <<: *java-service
+    image: collab-office/user-service:local
+    container_name: collab-user-service
+    build: { <<: *java-build, target: user-service }
+    expose: ["8101"]
+    healthcheck: &user-health
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8101"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  document-service:
+    <<: *java-service
+    image: collab-office/document-service:local
+    container_name: collab-document-service
+    build: { <<: *java-build, target: document-service }
+    expose: ["8102"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8102"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  collaboration-service:
+    <<: *java-service
+    image: collab-office/collaboration-service:local
+    container_name: collab-collaboration-service
+    build: { <<: *java-build, target: collaboration-service }
+    expose: ["8103"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8103"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  message-service:
+    <<: *java-service
+    image: collab-office/message-service:local
+    container_name: collab-message-service
+    build: { <<: *java-build, target: message-service }
+    expose: ["8104"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8104"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  meeting-service:
+    <<: *java-service
+    image: collab-office/meeting-service:local
+    container_name: collab-meeting-service
+    build: { <<: *java-build, target: meeting-service }
+    expose: ["8105"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8105"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  task-service:
+    <<: *java-service
+    image: collab-office/task-service:local
+    container_name: collab-task-service
+    build: { <<: *java-build, target: task-service }
+    expose: ["8106"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8106"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  file-service:
+    <<: *java-service
+    image: collab-office/file-service:local
+    container_name: collab-file-service
+    mem_limit: 768m
+    build: { <<: *java-build, target: file-service }
+    expose: ["8107"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8107"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  notification-service:
+    <<: *java-service
+    image: collab-office/notification-service:local
+    container_name: collab-notification-service
+    build: { <<: *java-build, target: notification-service }
+    expose: ["8109"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8109"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+      mailpit: { condition: service_healthy }
+
+  search-service:
+    <<: *java-service
+    image: collab-office/search-service:local
+    container_name: collab-search-service
+    build: { <<: *java-build, target: search-service }
+    expose: ["8110"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8110"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      db-migrate: { condition: service_completed_successfully }
+      nacos: { condition: service_healthy }
+      elasticsearch-init: { condition: service_completed_successfully }
+
+  gateway:
+    <<: *java-service
+    image: collab-office/gateway:local
+    container_name: collab-gateway
+    build: { <<: *java-build, target: gateway }
+    ports: ["127.0.0.1:${GATEWAY_PORT:-18090}:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      user-service: { condition: service_healthy }
+      document-service: { condition: service_healthy }
+      collaboration-service: { condition: service_healthy }
+      message-service: { condition: service_healthy }
+      meeting-service: { condition: service_healthy }
+      task-service: { condition: service_healthy }
+      file-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+      search-service: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  websocket:
+    <<: *java-service
+    image: collab-office/websocket:local
+    container_name: collab-websocket
+    build: { <<: *java-build, target: websocket }
+    expose: ["9001", "9090"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9090"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      collaboration-service: { condition: service_healthy }
+      document-service: { condition: service_healthy }
+      message-service: { condition: service_healthy }
+      meeting-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      nacos: { condition: service_healthy }
+
+  web:
+    image: collab-office/web:local
+    container_name: collab-web
+    build:
+      context: ./collab-office-web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports: ["${WEB_PORT:-3030}:80"]
+    depends_on:
+      gateway: { condition: service_healthy }
+      websocket: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [collab-net]
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
+  minio-data:
+  es-data:
+  nacos-logs:
+networks:
+  collab-net:
+    driver: bridge

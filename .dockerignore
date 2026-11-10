@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+.vscode
+.claude
+.antigravitycli
+**/target
+**/node_modules
+**/dist
+collab-office-android
+collab-office-web
+tools
+*.log
+*.dump
+*.iml

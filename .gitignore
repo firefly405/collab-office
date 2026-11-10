@@ -1,0 +1,71 @@
+# ===== Java / Maven =====
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+!.vscode/extensions.json
+.settings/
+.project
+.classpath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+nul
+desktop.ini
+
+# ===== Redis =====
+dump.rdb
+*.rdb
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+
+# ===== Node.js (前端) =====
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ===== Build & Package =====
+*.zip
+*.tar.gz
+*.tar
+offline-packages/
+package-lock.json
+
+# ===== Sensitive files =====
+*.env
+.env
+.env.*
+!.env.example
+application-local.yml
+
+# ===== 本地工具二进制 =====
+tools/Redis/
+tools/nacos/
+tools/**/*.exe
+tools/**/*.pdb
+tools/**/*.dll
+offline-packages/
+tools/native-runtime/
+tools/mysql-data/
+tools/elasticsearch-7.17.27/
+tools/erlang/
+tools/go/
+tools/nacos-server-2.4.3/
+tools/rabbitmq_server-3.13.7/
+tools/libreoffice-extract/
+erl_crash.dump
+e2e-api-test.ps1

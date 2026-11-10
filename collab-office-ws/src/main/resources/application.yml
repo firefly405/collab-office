@@ -1,0 +1,45 @@
+server:
+  port: 9001
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+ws:
+  port: 9090
+  heartbeat-interval: 30
+  idle-timeout: 90
+
+spring:
+  application:
+    name: collab-office-ws
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      connect-timeout: 3000ms
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+app:
+  internal-token: ${INTERNAL_CALL_TOKEN:default-secret-token}
+  collab:
+    # 新客户端 join 时拉取的历史 update 条数上限
+    history-sync-limit: 200
+
+logging:
+  level:
+    com.collaboffice: ${LOG_LEVEL:INFO}
+    com.alibaba.nacos: WARN

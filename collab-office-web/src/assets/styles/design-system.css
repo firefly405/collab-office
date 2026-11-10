@@ -1,0 +1,241 @@
+/* ==========================================
+   CollabOffice Design System v3.0
+   Kinetic Sync 设计系统
+   参考: 设计稿/stitch_design_tone_synthesis/kinetic_sync/DESIGN.md
+   ========================================== */
+
+/* === Kinetic Sync 设计令牌 === */
+:root {
+  /* -- 品牌色 -- */
+  --c-brand: #3370FF;
+  --c-brand-light: rgba(51, 112, 255, 0.1);
+  --c-brand-hover: #2A5FE0;
+  --c-brand-active: #1E4DBF;
+
+  /* -- 表面色(Paper-on-Cloud 纸云层级) -- */
+  --c-bg: #F5F6F7;
+  --c-surface: #FFFFFF;
+  --c-surface-hover: #F9FAFB;
+  --c-surface-dim: #EDEEEF;
+
+  /* -- 边框 -- */
+  --c-border: #E5E6EB;
+  --c-border-light: #F0F1F3;
+
+  /* -- 文字 -- */
+  --c-text: #1D2129;
+  --c-text-secondary: #4E5969;
+  --c-text-muted: #86909C;
+  --c-text-ghost: #C9CDD4;
+
+  /* -- 语义色 -- */
+  --c-success: #00B578;
+  --c-success-light: #E8F8F2;
+  --c-warning: #FF8F1F;
+  --c-warning-light: #FFF4E8;
+  --c-danger: #FF3B30;
+  --c-danger-light: #FFEDEC;
+
+  /* -- 存在感知 -- */
+  --c-online: #22C55E;
+  --c-busy: #EF4444;
+  --c-offline: #94A3B8;
+
+  /* -- 选中 -- */
+  --c-selection: rgba(51, 112, 255, 0.1);
+
+  /* -- 圆角 (Soft 4px base) -- */
+  --radius-sm: 4px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* -- 阴影(Tonal Layers, 低对比) -- */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  --shadow-float: 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px #E5E6EB;
+
+  /* -- 动画 -- */
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+
+  /* -- 排版 -- */
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'Fira Code', 'Consolas', monospace;
+  --text-small: 12px;
+  --text-body: 14px;
+  --text-section: 16px;
+  --text-heading: 22px;
+  --text-stat: 32px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* -- 布局 -- */
+  --sidebar-width: 280px;
+  --content-max: 1200px;
+  --gutter: 1rem;
+}
+
+/* === 全局重置 === */
+:root[data-theme="dark"] {
+  color-scheme:dark;
+  --c-bg:#191b20;--c-surface:#22252b;--c-surface-hover:#2b2f36;--c-surface-dim:#30343c;
+  --c-border:#414650;--c-border-light:#333740;--c-text:#edf0f5;--c-text-secondary:#c2c8d3;--c-text-muted:#a3adba;--c-text-ghost:#687280;
+  --c-brand:#7ea4ff;--c-brand-hover:#a1bcff;--c-brand-light:#283750;--c-success-light:#193a30;--c-warning-light:#463522;--c-danger-light:#492c30;
+  --el-bg-color:var(--c-surface);--el-bg-color-page:var(--c-bg);--el-bg-color-overlay:var(--c-surface);--el-fill-color-blank:var(--c-surface);--el-fill-color-light:var(--c-surface-hover);--el-fill-color:var(--c-surface-dim);--el-text-color-primary:var(--c-text);--el-text-color-regular:var(--c-text-secondary);--el-text-color-placeholder:var(--c-text-muted);--el-border-color:var(--c-border);--el-border-color-light:var(--c-border);--el-border-color-lighter:var(--c-border-light);--el-color-primary:var(--c-brand);
+}
+.quill-editor .ql-editor {font-family:var(--editor-font,Arial);font-size:var(--editor-size,15px);line-height:var(--editor-line-height,1.8);max-width:var(--editor-width,860px);margin-inline:auto;color:var(--c-text)}
+:root[data-theme="dark"] .ql-toolbar,:root[data-theme="dark"] .ql-container {background:var(--c-surface);border-color:var(--c-border)}
+:root[data-theme="dark"] .ql-snow .ql-stroke{stroke:var(--c-text-secondary)}
+:root[data-theme="dark"] .ql-snow .ql-fill{fill:var(--c-text-secondary)}
+:root[data-theme="dark"] .ql-snow .ql-picker{color:var(--c-text-secondary)}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--c-bg);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === 页面入场动画 === */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(51,112,255,.3); }
+  50% { box-shadow: 0 0 0 6px rgba(51,112,255,0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .4; transform: scale(.75); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* === 通用动画类 === */
+.fade-up-enter-active { animation: fade-up .35s var(--ease-out); }
+.fade-in-enter-active { animation: fade-in .25s var(--ease-out); }
+.slide-right-enter-active { animation: slide-right .3s var(--ease-out); }
+.scale-in-enter-active { animation: scale-in .25s var(--ease-out); }
+
+/* === 路由切换动画 === */
+.fade-slide-enter-active { transition: all .25s var(--ease-out); }
+.fade-slide-leave-active { transition: all .15s var(--ease-in-out); }
+.fade-slide-enter-from { opacity: 0; transform: translateY(6px) scale(.99); }
+.fade-slide-leave-to { opacity: 0; transform: translateY(-4px) scale(.99); }
+
+/* === 骨架屏载入 === */
+.skeleton {
+  background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-bg) 50%, var(--c-border-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+
+.skeleton-text { height: 14px; margin-bottom: 8px; }
+.skeleton-text.short { width: 60%; }
+.skeleton-title { height: 20px; width: 40%; margin-bottom: 16px; }
+.skeleton-card { height: 80px; margin-bottom: 12px; }
+.skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; }
+
+/* === 卡片微交互 === */
+.card-hover {
+  transition: all .2s var(--ease-out);
+  cursor: pointer;
+}
+.card-hover:hover {
+  border-color: var(--c-brand);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* === 脉冲指示器 === */
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+}
+.status-dot.online {
+  background: var(--c-online);
+  animation: dot-pulse 2s infinite;
+}
+.status-dot.offline { background: var(--c-offline); }
+.status-dot.busy { background: var(--c-busy); }
+
+/* === 渐变按钮增强 === */
+.btn-gradient {
+  background: linear-gradient(135deg, var(--c-brand), #6366F1);
+  color: #fff;
+  border: none;
+  transition: all .2s var(--ease-out);
+}
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(51,112,255,.3);
+}
+
+/* === 滚动条美化 === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+/* === 选中文本 === */
+::selection { background: var(--c-selection); color: var(--c-text); }
+
+/* === Element Plus 全局覆盖 Kinetic Sync === */
+.el-button { transition: all .15s var(--ease-out); }
+.el-button:active { transform: scale(.97); }
+.el-button--primary {
+  --el-button-bg-color: var(--c-brand);
+  --el-button-border-color: var(--c-brand);
+}
+.el-card { border-radius: var(--radius-lg) !important; }
+.el-dialog { border-radius: var(--radius-xl) !important; }
+.el-drawer { border-radius: var(--radius-lg) 0 0 var(--radius-lg) !important; }
+.el-menu { border-right: none !important; }
+.el-menu-item.is-active {
+  background: var(--c-brand-light) !important;
+  border-left: 3px solid var(--c-brand) !important;
+}
+.el-tag { border-radius: var(--radius) !important; font-weight: 600; }
+.el-input__wrapper { border-radius: var(--radius) !important; }
+.el-table th { background: var(--c-bg) !important; }

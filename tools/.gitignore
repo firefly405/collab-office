@@ -1,0 +1,14 @@
+# 中间件二进制，不纳入版本控制
+Redis-x64-*/
+nacos/
+nacos-server-*/
+*.zip
+native-runtime/
+go/
+erlang/
+mailpit/
+rabbitmq_server-*/
+elasticsearch-*/
+libreoffice/
+libreoffice-extract/
+*.msi
